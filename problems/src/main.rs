@@ -50,16 +50,16 @@ impl Deref for OOR<'_> {
     }
 }
 
-// mutaboe reference to a string slice in a borrowed string
+// mutable reference to a string slice in a borrowed string
 impl DerefMut for OOR<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         // if the string is borrowed, convert it to owned in order to mutate and store a String before you can hand out a &mut str.
-        if let OOR::Borrowed(s) = self { 
-            *self = OOR::Owned(s.to_string());
-        }
         match self {
-            OOR::Owned(ref mut s) => s,
-            _ => unreachable!(),
+            OOR::Borrowed(s) => {
+                *self = OOR::Owned((*s).to_string());
+                self
+            },
+            OOR::Owned(s) => s
         }
     }
 }

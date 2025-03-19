@@ -20,7 +20,7 @@ impl Image {
     pub fn new_solid(color: Color) -> Self {
         Self([color; 64])
     }
-    fn default() -> Self {
+    fn default() -> Self { // pub?
         Self([Color::default(); 64])
     }
     pub fn row(&self, row: usize) -> &[Color] {

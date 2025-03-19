@@ -5,3 +5,9 @@ edition = "2021"
 
 [dependencies]
 micromath = { version = "2.1", default-features = false }
+cortex-m-rt = "0.7"
+embassy-stm32 = { version = "0.1", features = ["stm32l475vg"] }
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+
+[[bin]]
+name = "tp-led-matrix"

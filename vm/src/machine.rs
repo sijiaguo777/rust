@@ -6,7 +6,6 @@ pub const MEMORY_SIZE: usize = 4096;
 extern crate pretty_env_logger;
 extern crate log;
 
-//////////////////////
 const NREGS: usize = 16;
 
 const IP: usize = 0;
