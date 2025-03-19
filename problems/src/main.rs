@@ -18,16 +18,14 @@ fn ret_string() -> String {
 /// # Returns
 /// 
 /// The chosen string slice, either `s1` or `s2`.
-fn choose_str<'a, 'b>(s1: &'a str, s2: &'b str, select_s1: bool) -> &'a str 
-where
-    'b: 'a, // b must outlive a
-{
+fn choose_str<'a>(s1: &'a str, s2: &'a str, select_s1: bool) -> &'a str {
     if select_s1 { 
         s1 
     } else { 
         s2
     }
 }
+
 
 enum OOR<'a> {
     Owned(String),
