@@ -31,7 +31,9 @@ impl Image {
         let mut image = Self::default();
         for row in 0..8 {
             for col in 0..8 {
-                image[(row, col)] = color / (1 + row * row + col) as f32;
+                let corrected = color.div((1 + row * row + col) as f32);
+                image[(row, col)] = corrected;
+                defmt::debug!("row: {}, col: {}, color: {:?}", row, col, corrected);
             }
         }
         image

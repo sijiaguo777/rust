@@ -6,8 +6,21 @@ edition = "2021"
 [dependencies]
 micromath = { version = "2.1", default-features = false }
 cortex-m-rt = "0.7"
-embassy-stm32 = { version = "0.1", features = ["stm32l475vg"] }
+embassy-stm32 = { version = "0.2.0", features = ["stm32l475vg", "time-driver-any"] }
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+defmt = { version = "0.3" }
+defmt-rtt = {version = "0.4.1"}
+panic-probe = {version = "0.3.2", features = ["print-defmt"]}
+stm32-metapac = {version = "16.0.0"}
+embassy-time = { version = "0.4.0", features = ["tick-hz-32_768", "generic-queue-8"] }
+embedded-hal = "1.0.0"
+
+
+[profile.release]
+debug = true      # symbols are nice and they don't increase the size on the target
+lto = true        # better optimizations
+codegen-units = 1 # better optimizations
+
 
 [[bin]]
 name = "tp-led-matrix"
