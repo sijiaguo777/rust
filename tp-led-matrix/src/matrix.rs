@@ -36,21 +36,23 @@ impl Matrix<'_> {
         pc5: PC5,
     ) -> Self {
         // Configure the pins, with the correct speed and their initial state
-        let sb = Output::new(pa2, Level::High, Speed::VeryHigh);
-        let lat = Output::new(pa3, Level::High, Speed::VeryHigh);
-        let rst = Output::new(pa4, Level::High, Speed::VeryHigh);
-        let sck = Output::new(pa5, Level::High, Speed::VeryHigh);
-        let sda = Output::new(pa6, Level::High, Speed::VeryHigh);
+        let sb = Output::new(pc5, Level::High, Speed::VeryHigh);
+        let lat = Output::new(pc4, Level::High, Speed::VeryHigh);
+        let rst = Output::new(pc3, Level::Low, Speed::VeryHigh);
+        let sck = Output::new(pb1, Level::Low, Speed::VeryHigh);
+        let sda = Output::new(pa4, Level::Low, Speed::VeryHigh);
         let rows = [
-            Output::new(pa7, Level::High, Speed::VeryHigh),
-            Output::new(pa15, Level::High, Speed::VeryHigh),
-            Output::new(pb0, Level::High, Speed::VeryHigh),
-            Output::new(pb1, Level::High, Speed::VeryHigh),
-            Output::new(pb2, Level::High, Speed::VeryHigh),
-            Output::new(pc3, Level::High, Speed::VeryHigh),
-            Output::new(pc4, Level::High, Speed::VeryHigh),
-            Output::new(pc5, Level::High, Speed::VeryHigh)];
-        return Self {
+            Output::new(pb2, Level::Low, Speed::VeryHigh),
+            Output::new(pa15, Level::Low, Speed::VeryHigh),
+            Output::new(pa2, Level::Low, Speed::VeryHigh),
+            Output::new(pa7, Level::Low, Speed::VeryHigh),
+            Output::new(pa6, Level::Low, Speed::VeryHigh),
+            Output::new(pa5, Level::Low, Speed::VeryHigh),
+            Output::new(pb0, Level::Low, Speed::VeryHigh),
+            Output::new(pa3, Level::Low, Speed::VeryHigh),
+        ];
+
+        let mut instance = Self {
             sb,
             lat,
             rst,
@@ -58,25 +60,24 @@ impl Matrix<'_> {
             sda,
             rows,
         };
+
+        // Modify the instance's pins
+        // instance.rst.set_low();
+        Delay.delay_ms(100);
+        instance.init_bank0();
+        instance.rst.set_high();
+        instance
     }
 
     /// Make a brief high pulse of the SCK pin
     fn pulse_sck(&mut self) {
         self.sck.set_high();
-        // for _ in 0..2 {
-        //     cortex_m::asm::nop();
-        // }
-        Delay.delay_us(10);
         self.sck.set_low();
     }
     /// Make a brief low pulse of the LAT pin
     fn pulse_lat(&mut self) {
-        self.lat.set_high();
-        // for _ in 0..2 {
-        //     cortex_m::asm::nop();
-        // }
-        Delay.delay_us(10);
         self.lat.set_low();
+        self.lat.set_high();
     }
 
     /// Send a byte on SDA starting with the MSB and pulse SCK high after each bit
@@ -96,10 +97,6 @@ impl Matrix<'_> {
     /// must be applied to every pixel before sending them. The previous row must
     /// be deactivated and the new one activated.
     pub fn send_row(&mut self, row: usize, pixels: &[Color]) {
-        // Deactivate the previous row
-        for r in self.rows.iter_mut() {
-            r.set_low();
-        }
         // Send the new row
         for pixel in pixels {
             let pixel = pixel.gamma_correct();
@@ -107,12 +104,16 @@ impl Matrix<'_> {
             self.send_byte(pixel.g);
             self.send_byte(pixel.r);
         }
-        // Pulse LAT
-            self.pulse_lat();
-        // Activate the new row
-        if let Some(row_pin) = self.rows.get_mut(row) {
-            row_pin.set_high();
+
+        for r in &mut self.rows {
+            r.set_low();
         }
+
+        // Pulse LAT
+        self.pulse_lat();
+
+        // Activate the new row
+        self.rows[row].set_high();
     }
 
     /// Initialize bank0 by temporarily setting SB to low and sending 144 one bits,
@@ -120,7 +121,6 @@ impl Matrix<'_> {
     /// restored to high.
     fn init_bank0(&mut self) {
         self.sb.set_low();
-        /// TODO: Send 144 one bits to be checked...
         for _ in 0..18 {
             self.send_byte(0xFF);
         }
@@ -132,9 +132,13 @@ impl Matrix<'_> {
     pub fn display_image(&mut self, image: &Image) {
         // Do not forget that image.row(n) gives access to the content of row n,
         // and that self.send_row() uses the same format.
+
         self.init_bank0();
         for row in 0..8 {
             self.send_row(row, &image.row(row));
+        }
+        for r in &mut self.rows {
+            r.set_low();
         }
     }
 }

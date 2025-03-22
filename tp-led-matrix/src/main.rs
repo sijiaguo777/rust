@@ -38,24 +38,9 @@ fn main() -> ! {
 
     let blue = Color::BLUE;
     let image= Image::gradient(blue);
-    // for row in 0..8 {
-    //     let row_pixels = image.row(row);
-    //     defmt::info!("Row {}:", row);
-    //     for (col, pixel) in row_pixels.iter().enumerate() {
-    //         defmt::info!(
-    //             "  Col {}: r = {=u8}, g = {=u8}, b = {=u8}",
-    //             col,
-    //             pixel.r,
-    //             pixel.g,
-    //             pixel.b
-    //         );
-    //     }
-    // }
     
     loop {
         matrix.display_image(&image);
     }
     // panic!("Everything configured");
-
-
 }

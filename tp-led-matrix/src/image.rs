@@ -33,7 +33,6 @@ impl Image {
             for col in 0..8 {
                 let corrected = color.div((1 + row * row + col) as f32);
                 image[(row, col)] = corrected;
-                defmt::debug!("row: {}, col: {}, color: {:?}", row, col, corrected);
             }
         }
         image
@@ -126,4 +125,3 @@ impl AsMut<[u8; 192]> for Image {
         unsafe { transmute(&mut self.0) }
     }
 }
-
