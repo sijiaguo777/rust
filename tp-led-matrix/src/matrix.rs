@@ -1,7 +1,8 @@
 use embassy_stm32::gpio::*;
 use embassy_stm32::peripherals::*;
-use embedded_hal::delay::DelayNs as _;
-use embassy_time::Delay;
+// use embedded_hal::delay::DelayNs as _;
+// use embassy_time::Delay;
+use embassy_time::{Duration, Timer};
 use crate::{Color, Image};
 pub struct Matrix<'a> {
     sb: Output<'a>,
@@ -20,7 +21,7 @@ impl Matrix<'_> {
     /// newly constructed structure.
     /// The pins will be set to very high speed mode.
     #[allow(clippy::too_many_arguments)]   // Necessary to avoid a clippy warning
-    pub fn new(
+    pub async fn new(
         pa2: PA2,
         pa3: PA3,
         pa4: PA4,
@@ -63,7 +64,9 @@ impl Matrix<'_> {
 
         // Modify the instance's pins
         // instance.rst.set_low();
-        Delay.delay_ms(100);
+        // Delay.delay_ms(100);
+        Timer::after(Duration::from_millis(100)).await;
+        
         instance.init_bank0();
         instance.rst.set_high();
         instance
