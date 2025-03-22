@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 #![feature(type_alias_impl_trait)]
-use embassy_stm32::spi::Polarity;
 use embassy_stm32 as _;   
+use embassy_time::Ticker;
 use embassy_time::{Timer, Duration};
 use embassy_stm32::gpio::*;
 use embassy_stm32::peripherals::*;
@@ -11,11 +11,13 @@ use panic_probe as _;
 use defmt_rtt as _;
 use embassy_stm32::rcc::*;
 use embassy_stm32::Config;
+use tp_led_matrix::matrix::Matrix;
 use tp_led_matrix::Image;
 use tp_led_matrix::Color;
 use tp_led_matrix::matrix;
 extern crate embassy_executor;
 use embassy_executor::Spawner;
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let mut config = Config::default();
@@ -33,15 +35,11 @@ async fn main(spawner: Spawner) {
 
     // In your main program, build an image made of a gradient of blue and display it in loop on the matrix. Since it is necessary for the display to go fast, do not forget to run your program in release mode, as we have been doing for a while now. Don't forget that Image values have a .row() method which can be handy here.
     spawner.spawn(blinker(p.PB14)).unwrap();
-    let mut matrix = matrix::Matrix::new(p.PA2, p.PA3, p.PA4, p.PA5, p.PA6, p.PA7, p.PA15, p.PB0, p.PB1, p.PB2, p.PC3, p.PC4, p.PC5,).await;
-
+    let matrix = matrix::Matrix::new(p.PA2, p.PA3, p.PA4, p.PA5, p.PA6, p.PA7, p.PA15, p.PB0, p.PB1, p.PB2, p.PC3, p.PC4, p.PC5,).await;
+    
     let blue = Color::BLUE;
     let image= Image::gradient(blue);
-    
-    loop {
-        matrix.display_image(&image);
-    }
-
+    spawner.spawn(display(matrix, image)).unwrap();
 }
 
 #[embassy_executor::task]
@@ -55,5 +53,14 @@ async fn blinker(pb14: PB14){
             Timer::after(Duration::from_millis(100)).await;
         }
         Timer::after(Duration::from_millis(500)).await;
+    }
+}
+
+
+#[embassy_executor::task]
+async fn display(mut matrix: Matrix<'static>, image: Image) {
+    let mut ticker = Ticker::every(Duration::from_hz(640));
+    loop{
+        matrix.display_image(&image, &mut ticker).await;
     }
 }

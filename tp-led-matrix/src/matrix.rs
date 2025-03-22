@@ -1,5 +1,6 @@
 use embassy_stm32::gpio::*;
 use embassy_stm32::peripherals::*;
+use embassy_time::Ticker;
 // use embedded_hal::delay::DelayNs as _;
 // use embassy_time::Delay;
 use embassy_time::{Duration, Timer};
@@ -132,12 +133,13 @@ impl Matrix<'_> {
     }
 
     /// Display a full image, row by row, as fast as possible.
-    pub fn display_image(&mut self, image: &Image) {
+    pub async fn display_image(&mut self, image: &Image, ticker: &mut Ticker) {
         // Do not forget that image.row(n) gives access to the content of row n,
         // and that self.send_row() uses the same format.
 
         self.init_bank0();
         for row in 0..8 {
+            ticker.next().await;
             self.send_row(row, &image.row(row));
         }
         for r in &mut self.rows {
