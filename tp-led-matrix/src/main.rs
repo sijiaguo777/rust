@@ -17,6 +17,10 @@ use tp_led_matrix::Color;
 use tp_led_matrix::matrix;
 extern crate embassy_executor;
 use embassy_executor::Spawner;
+use embassy_sync::mutex::Mutex;
+use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+
+static IMAGE: Mutex<ThreadModeRawMutex, Image> = Mutex::new(Image::new_solid(Color::GREEN));
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -33,14 +37,27 @@ async fn main(spawner: Spawner) {
     config.rcc.sys = Sysclk::PLL1_R;
     let p = embassy_stm32::init(config);
 
-    // In your main program, build an image made of a gradient of blue and display it in loop on the matrix. Since it is necessary for the display to go fast, do not forget to run your program in release mode, as we have been doing for a while now. Don't forget that Image values have a .row() method which can be handy here.
     spawner.spawn(blinker(p.PB14)).unwrap();
     let matrix = matrix::Matrix::new(p.PA2, p.PA3, p.PA4, p.PA5, p.PA6, p.PA7, p.PA15, p.PB0, p.PB1, p.PB2, p.PC3, p.PC4, p.PC5,).await;
     
-    let blue = Color::BLUE;
-    let image= Image::gradient(blue);
-    spawner.spawn(display(matrix, image)).unwrap();
+    spawner.spawn(display(matrix)).unwrap();
+    let mut current_color = 0;
+    loop {
+        let new_image = match current_color {
+            0 => Image::gradient(Color::BLUE),
+            1 => Image::gradient(Color::GREEN),
+            2 => Image::gradient(Color::RED),
+            _ => unreachable!(),
+        };
+        current_color = (current_color + 1) % 3;
+        {
+        let mut image = IMAGE.lock().await;
+        *image = new_image;
+        }
+        Timer::after(Duration::from_secs(1)).await;
+    }
 }
+
 
 #[embassy_executor::task]
 async fn blinker(pb14: PB14){
@@ -58,9 +75,23 @@ async fn blinker(pb14: PB14){
 
 
 #[embassy_executor::task]
-async fn display(mut matrix: Matrix<'static>, image: Image) {
+async fn display(mut matrix: Matrix<'static>) {
     let mut ticker = Ticker::every(Duration::from_hz(640));
+    // let mut local_image = Image::new_solid(Color::BLACK); // 或其他默认值
+    matrix.init_bank0();
     loop{
-        matrix.display_image(&image, &mut ticker).await;
+        
+        for r in 0..8{
+            let mut buffer: [Color; 8] = [Color::default(); 8];
+            {
+                let image = IMAGE.lock().await;
+                buffer.copy_from_slice(&image.row(r));
+            }
+            matrix.send_row(r, &buffer);
+            ticker.next().await;
+        }
+        for r in &mut matrix.rows {
+            r.set_low();
+        }
     }
 }

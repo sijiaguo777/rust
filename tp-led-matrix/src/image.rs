@@ -4,6 +4,7 @@ use core::ops::IndexMut;
 use core::ops::{Div, Mul};
 use micromath::F32Ext as _;
 
+
 // pub mod image{
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
@@ -17,7 +18,7 @@ pub struct Image(pub [Color; 64]); // An image is a collection of 64 Color pixel
                                    // }
 
 impl Image {
-    pub fn new_solid(color: Color) -> Self {
+    pub const fn new_solid(color: Color) -> Self {
         Self([color; 64])
     }
     fn default() -> Self { // pub?
@@ -70,6 +71,7 @@ impl Color {
     pub const RED: Self = Self { r: 255, g: 0, b: 0 };
     pub const GREEN: Self = Self { r: 0, g: 255, b: 0 };
     pub const BLUE: Self = Self { r: 0, g: 0, b: 255 };
+    pub const BLACK: Self = Self { r: 0, g: 0, b: 0 };
 
     pub fn gamma_correct(&self) -> Self {
         Self {

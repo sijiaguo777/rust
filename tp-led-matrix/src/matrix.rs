@@ -11,7 +11,7 @@ pub struct Matrix<'a> {
     rst: Output<'a>,
     sck: Output<'a>,
     sda: Output<'a>,
-    rows: [Output<'a>; 8],
+    pub rows: [Output<'a>; 8],
 }
 
 impl Matrix<'_> {
@@ -123,7 +123,7 @@ impl Matrix<'_> {
     /// Initialize bank0 by temporarily setting SB to low and sending 144 one bits,
     /// pulsing SCK high after each bit and pulsing LAT low at the end. SB is then
     /// restored to high.
-    fn init_bank0(&mut self) {
+    pub fn init_bank0(&mut self) {
         self.sb.set_low();
         for _ in 0..18 {
             self.send_byte(0xFF);
