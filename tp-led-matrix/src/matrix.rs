@@ -1,8 +1,6 @@
 use embassy_stm32::gpio::*;
 use embassy_stm32::peripherals::*;
 use embassy_time::Ticker;
-// use embedded_hal::delay::DelayNs as _;
-// use embassy_time::Delay;
 use embassy_time::{Duration, Timer};
 use crate::{Color, Image};
 pub struct Matrix<'a> {
@@ -15,13 +13,7 @@ pub struct Matrix<'a> {
 }
 
 impl Matrix<'_> {
-    /// Create a new matrix from the control registers and the individual
-    /// unconfigured pins. SB and LAT will be set high by default, while
-    /// other pins will be set low. After 100ms, RST will be set high, and
-    /// the bank 0 will be initialized by calling `init_bank0()` on the
-    /// newly constructed structure.
-    /// The pins will be set to very high speed mode.
-    #[allow(clippy::too_many_arguments)]   // Necessary to avoid a clippy warning
+    #[allow(clippy::too_many_arguments)]
     pub async fn new(
         pa2: PA2,
         pa3: PA3,
@@ -63,9 +55,6 @@ impl Matrix<'_> {
             rows,
         };
 
-        // Modify the instance's pins
-        // instance.rst.set_low();
-        // Delay.delay_ms(100);
         Timer::after(Duration::from_millis(100)).await;
         
         instance.init_bank0();
@@ -78,13 +67,15 @@ impl Matrix<'_> {
         self.sck.set_high();
         self.sck.set_low();
     }
+
+
     /// Make a brief low pulse of the LAT pin
     fn pulse_lat(&mut self) {
         self.lat.set_low();
         self.lat.set_high();
     }
 
-    /// Send a byte on SDA starting with the MSB and pulse SCK high after each bit
+
     fn send_byte(&mut self, pixel: u8) {
         for i in (0..8).rev() {
             let bit = (pixel >> i) & 1;
@@ -97,12 +88,10 @@ impl Matrix<'_> {
         }
     }
 
-    /// Send a full row of bytes in BGR order and pulse LAT low. Gamma correction
-    /// must be applied to every pixel before sending them. The previous row must
-    /// be deactivated and the new one activated.
+
     pub fn send_row(&mut self, row: usize, pixels: &[Color]) {
         // Send the new row
-        for pixel in pixels {
+        for pixel in pixels.iter().rev() {
             let pixel = pixel.gamma_correct();
             self.send_byte(pixel.b);
             self.send_byte(pixel.g);
@@ -120,9 +109,7 @@ impl Matrix<'_> {
         self.rows[row].set_high();
     }
 
-    /// Initialize bank0 by temporarily setting SB to low and sending 144 one bits,
-    /// pulsing SCK high after each bit and pulsing LAT low at the end. SB is then
-    /// restored to high.
+    
     pub fn init_bank0(&mut self) {
         self.sb.set_low();
         for _ in 0..18 {
@@ -147,9 +134,4 @@ impl Matrix<'_> {
         }
     }
 }
-
-
-
-
-
 

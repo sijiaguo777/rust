@@ -38,6 +38,19 @@ impl Image {
         }
         image
     }
+    pub fn from_buffer(buffer: &[u8; 192]) -> Self {
+        let mut image = Self::default();
+        for row in 0..8 {
+            for col in 0..8 {
+                let idx = row * 8 + col;
+                let r = buffer[idx * 3];
+                let g = buffer[idx * 3 + 1];
+                let b = buffer[idx * 3 + 2];
+                image[(row, col)] = Color { r, g, b };
+            }
+        }
+        image
+    }
 }
 
 pub mod gamma {
