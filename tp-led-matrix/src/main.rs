@@ -3,16 +3,18 @@
 #![feature(type_alias_impl_trait)]
 
 use embassy_stm32::usart::{self, Uart};
+use embassy_sync::signal::Signal;
 use embassy_time::Ticker;
 use embassy_time::{Duration, Timer};
 
 use embassy_stm32::peripherals::USART1;
 use embassy_stm32::peripherals::*;
 use embassy_stm32::{bind_interrupts, gpio::*};
-
 use defmt_rtt as _;
 use embassy_stm32::rcc::*;
 use embassy_stm32::Config;
+use heapless::box_pool;
+use heapless::pool::boxed::{Box, BoxBlock};
 use panic_probe as _;
 use tp_led_matrix::matrix;
 use tp_led_matrix::matrix::Matrix;
@@ -22,8 +24,12 @@ extern crate embassy_executor;
 use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::mutex::Mutex;
+use futures::FutureExt;
 
-static IMAGE: Mutex<ThreadModeRawMutex, Image> = Mutex::new(Image::new_solid(Color::BLACK));
+box_pool!(POOL:Image);
+// static IMAGE: Mutex<ThreadModeRawMutex, Image> = Mutex::new(Image::new_solid(Color::BLACK));
+static NEXT_IMAGE: Signal<ThreadModeRawMutex, Box<POOL>> = Signal::new();
+
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -46,12 +52,39 @@ async fn main(spawner: Spawner) {
     )
     .await;
 
-    spawner
-        .spawn(serial_receiver(
-            p.USART1, p.PB7, p.PB6, p.DMA1_CH4, p.DMA1_CH5,
-        ))
-        .unwrap();
+    unsafe {
+        const BLOCK: BoxBlock<Image> = BoxBlock::new();
+        static mut MEMORY: [BoxBlock<Image>; 3] = [BLOCK; 3];
+        #[allow(static_mut_refs)]
+        for block in &mut MEMORY {
+          POOL.manage(block);
+        }
+      }
+
+    // spawner
+    //     .spawn(serial_receiver(
+    //         p.USART1, p.PB7, p.PB6, p.DMA1_CH4, p.DMA1_CH5,
+    //     ))
+    //     .unwrap();
+
     spawner.spawn(display(matrix)).unwrap();
+
+    loop{
+        if let Ok(res) = POOL.alloc(Image::gradient(Color::RED)) {
+            NEXT_IMAGE.signal(res);
+            Timer::after(Duration::from_secs(1)).await;
+        }
+        if let Ok(res) = POOL.alloc(Image::gradient(Color::GREEN)) {
+            NEXT_IMAGE.signal(res);
+            Timer::after(Duration::from_secs(1)).await;
+        }
+        if let Ok(res) = POOL.alloc(Image::gradient(Color::BLUE)) {
+            NEXT_IMAGE.signal(res);
+            Timer::after(Duration::from_secs(1)).await;
+        }
+        
+    }
+   
     // spawner.spawn(image_change()).unwrap();
 }
 
@@ -73,11 +106,15 @@ async fn blinker(pb14: PB14) {
 async fn display(mut matrix: Matrix<'static>) {
     let mut ticker = Ticker::every(Duration::from_hz(640));
     matrix.init_bank0();
+    let mut image = NEXT_IMAGE.wait().await;
+    // let image = Image::new_solid(Color::BLACK);
     loop {
+        if let Some(new) = NEXT_IMAGE.wait().now_or_never() {
+            image = new;
+        }
         for r in 0..8 {
             let mut buffer: [Color; 8] = [Color::default(); 8];
             {
-                let image = IMAGE.lock().await;
                 buffer.copy_from_slice(&image.row(r));
             }
             matrix.send_row(r, &buffer);
@@ -105,19 +142,26 @@ async fn serial_receiver(
     config.baudrate = 38400;
     let mut uart = Uart::new(usart1, tx_pin, rx_pin, Irqs, dma_tx, dma_rx, config)
         .expect("Failed to initialize UART");
-
-    let mut buffer: [u8; 192] = [0; 192];
-    let mut n;
-
+    
     loop {
         loop {
             let mut byte_buf = [0u8; 1];
             uart.read(&mut byte_buf).await.expect("failed to read byte");
             if byte_buf[0] == 0xff {
-                n = 0;
                 break;
             }
         }
+
+        let mut boxed_image = match POOL.alloc(Image::default()) {
+            Ok(image) => image,
+            Err(_) => {
+                defmt::error!("Failed to allocate image");
+                continue;
+            }
+        };
+
+        let buffer = boxed_image.as_mut();
+        let mut n = 0;
 
         while n < 192 {
             let mut byte_buf = [0u8; 1];
@@ -133,34 +177,26 @@ async fn serial_receiver(
                     continue;
                 }
             }
-
-            if n == 192 {
-                {
-                    let mut image = IMAGE.lock().await;
-                    let new_image = Image::from_buffer(&buffer);
-                    *image = new_image;
-                }
-                break;
-            }
         }
+        NEXT_IMAGE.signal(boxed_image);
     }
 }
 
-#[embassy_executor::task]
-async fn image_change() {
-    let mut current_color = 0;
-    loop {
-        let new_image = match current_color {
-            0 => Image::gradient(Color::BLUE),
-            1 => Image::gradient(Color::GREEN),
-            2 => Image::gradient(Color::RED),
-            _ => unreachable!(),
-        };
-        current_color = (current_color + 1) % 3;
-        {
-            let mut image = IMAGE.lock().await;
-            *image = new_image;
-        }
-        Timer::after(Duration::from_secs(1)).await;
-    }
-}
+// #[embassy_executor::task]
+// async fn image_change() {
+//     let mut current_color = 0;
+//     loop {
+//         let new_image = match current_color {
+//             0 => Image::gradient(Color::BLUE),
+//             1 => Image::gradient(Color::GREEN),
+//             2 => Image::gradient(Color::RED),
+//             _ => unreachable!(),
+//         };
+//         current_color = (current_color + 1) % 3;
+//         {
+//             let mut image = IMAGE.lock().await;
+//             *image = new_image;
+//         }
+//         Timer::after(Duration::from_secs(1)).await;
+//     }
+// }

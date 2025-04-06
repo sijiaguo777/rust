@@ -124,10 +124,10 @@ impl Matrix<'_> {
         // Do not forget that image.row(n) gives access to the content of row n,
         // and that self.send_row() uses the same format.
 
-        self.init_bank0();
+
         for row in 0..8 {
-            ticker.next().await;
             self.send_row(row, &image.row(row));
+            ticker.next().await;
         }
         for r in &mut self.rows {
             r.set_low();

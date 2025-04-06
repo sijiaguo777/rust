@@ -1,0 +1,8 @@
+/Users/guosijia/Desktop/rust/sijia-guo/tp-led-matrix/target/thumbv7em-none-eabihf/debug/deps/libembassy_usb_synopsys_otg-f33ca98b84ef0173.rmeta: /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/lib.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/fmt.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/otg_v1.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/../README.md
+
+/Users/guosijia/Desktop/rust/sijia-guo/tp-led-matrix/target/thumbv7em-none-eabihf/debug/deps/embassy_usb_synopsys_otg-f33ca98b84ef0173.d: /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/lib.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/fmt.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/otg_v1.rs /Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/../README.md
+
+/Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/lib.rs:
+/Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/fmt.rs:
+/Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/otg_v1.rs:
+/Users/guosijia/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embassy-usb-synopsys-otg-0.2.0/src/../README.md:

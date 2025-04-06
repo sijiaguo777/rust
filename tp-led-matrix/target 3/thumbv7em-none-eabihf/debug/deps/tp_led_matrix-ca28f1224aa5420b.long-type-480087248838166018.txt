@@ -1,0 +1,1 @@
+embassy_sync::signal::Signal<embassy_sync::blocking_mutex::raw::ThreadModeRawMutex, heapless::pool::boxed::Box<POOL>>
