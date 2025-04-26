@@ -21,18 +21,28 @@ use tp_led_matrix::matrix::Matrix;
 use tp_led_matrix::Color;
 use tp_led_matrix::Image;
 extern crate embassy_executor;
-use embassy_executor::Spawner;
-use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
-use embassy_sync::mutex::Mutex;
+use embassy_executor::{InterruptExecutor, Spawner};
+use embassy_stm32::interrupt::{Interrupt, InterruptExt, Priority};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use stm32_metapac::interrupt;
 use futures::FutureExt;
 
 box_pool!(POOL:Image);
-// static IMAGE: Mutex<ThreadModeRawMutex, Image> = Mutex::new(Image::new_solid(Color::BLACK));
-static NEXT_IMAGE: Signal<ThreadModeRawMutex, Box<POOL>> = Signal::new();
+static NEXT_IMAGE: Signal<CriticalSectionRawMutex, Box<POOL>> = Signal::new();
+static DISPLAY_EXECUTOR: InterruptExecutor = InterruptExecutor::new();
 
-
+#[embassy_stm32::interrupt]
+unsafe fn UART4() {
+    DISPLAY_EXECUTOR.on_interrupt();
+}
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    // dedicate UART4 to the display executor
+    Interrupt::UART4.set_priority(Priority::P6);
+    let display_spawner = DISPLAY_EXECUTOR.start(Interrupt::UART4);
+
+
+    // original
     let mut config = Config::default();
     config.rcc.hsi = true;
     config.rcc.pll = Some(Pll {
@@ -67,7 +77,7 @@ async fn main(spawner: Spawner) {
     //     ))
     //     .unwrap();
 
-    spawner.spawn(display(matrix)).unwrap();
+    display_spawner.spawn(display(matrix)).unwrap();
 
     loop{
         if let Ok(res) = POOL.alloc(Image::gradient(Color::RED)) {
